@@ -12,7 +12,7 @@ Resources:
     Properties:
       Parameters:
         AppName: !Ref AppName
-      TemplateURL: https://s3-us-west-2.amazonaws.com/cf-templates-f1qzfv4c2gms-us-west-2/create-vpc.yml
+      TemplateURL: https://s3-us-west-2.amazonaws.com/cf-templates-f1qzfv4c2gms-us-west-2/create-vpc.yaml
       TimeoutInMinutes: '1'
 Outputs:
   VPC:
