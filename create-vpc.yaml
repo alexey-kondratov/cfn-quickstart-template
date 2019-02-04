@@ -3,10 +3,10 @@ AWSTemplateFormatVersion: '2010-09-09'
 Description: VPC setup
 
 Parameters: 
-  AppName: 
+  InitStackName:
+    Description: The name of the stack that exports the projectname
+    Default: Name
     Type: String
-    Default: TestApp
-    Description: Name of your application or organization
   VpcCidr: 
     Type: String
     Default: 10.0.0.0/24
@@ -23,11 +23,13 @@ Resources:
       EnableDnsSupport: true
       Tags:
         - Key: Name
-          Value: !Sub ${AppName}-vpc
+          Value: 
+            FN::ImportValue: !Sub '${InitStackName}-appname'-vpc
 
 Outputs: 
   VPC:
     Value: !Ref VpcCidr
     Description: CIDR block of VPC
     Export:
-      Name: !Sub ${AppName}-vpc
+      Name: 
+        FN::ImportValue: !Sub '${InitStackName}-appname'-vpc

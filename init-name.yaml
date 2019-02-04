@@ -1,0 +1,16 @@
+---
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Init project name
+
+Parameters: 
+  AppName: 
+    Type: String
+    Default: TestApp
+    Description: Name of your application or organization
+
+Outputs: 
+  AppName:
+    Value: !Ref AppName
+    Description: Name of application
+    Export:
+      Name: !Sub ${AWS::StackName}-appname
