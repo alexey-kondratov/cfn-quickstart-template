@@ -2,6 +2,10 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Description: VPC setup
 Parameters: 
+  AppName: 
+    Type: String
+    Default: TestApp
+    Description: Name of your application or organization
   CidrBlock: 
     Type: String
     Default: 10.0.0.0/24
