@@ -2,19 +2,36 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Description: Provisioning environment
 
+Metadata:
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+      - Label:
+          default: Global Configuration
+        Parameters:
+          - AppName
+      - Label:
+          default: Network setup
+        Parameters:
+          - VpcCidr
+    ParameterLabels:
+      AppName:
+        default: Name of Application/Organization
+      VpcCidr:
+        default: VPC CIDR
+
 Parameters:
   AppName: 
     Type: String
     Default: TestApp
     Description: Name of your application or organization
-  CidrBlock: 
+  VpcCidr: 
     Type: String
     Default: 10.0.0.0/24
     AllowedPattern: "^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])(\\/(\\d|[1-2]\\d|3[0-2]))?$"
     Description: Enter VPC network with mask like 192.168.0.0/24 or 10.0.0.0/24
 
 Resources:
-  CreateVPC:
+  ConfigVPC:
     Type: AWS::CloudFormation::Stack
     Properties:
       Parameters:
@@ -24,5 +41,5 @@ Resources:
 
 Outputs:
   VPC:
-    Value: !Sub ${CreateVPC.Outputs.VPC}
+    Value: !Sub ${ConfigVPC.Outputs.VPC}
     Description: VPC name for environment
