@@ -48,7 +48,7 @@ Resources:
     Type: AWS::EC2::VPC
     Properties:
       CidrBlock:
-        Ref: VpcCidr
+        Ref: VpcCIDR
       EnableDnsHostnames: true
       EnableDnsSupport: true
       Tags:
@@ -127,7 +127,7 @@ Resources:
           Value: !Sub ${AppName}-app-standart-private-1c-1
 Outputs: 
   VPC:
-    Value: !Ref VpcCidr
+    Value: !Ref VpcCIDR
     Description: CIDR block of VPC
     Export:
       Name: !Sub ${AppName}-vpc
