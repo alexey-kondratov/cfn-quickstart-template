@@ -20,9 +20,17 @@ Metadata:
           - PrivateSubnet2CIDR
     ParameterLabels:
       AppName:
-        default: Name of Application/Organization
+        default: Name of App/Org
       VpcCidr:
         default: VPC CIDR
+      PublicSubnet1CIDR:
+        default: Public Subnet 1 CIDR
+      PublicSubnet2CIDR:
+        default: Public Subnet 2 CIDR
+      PrivateSubnet1CIDR:
+        default: Private Subnet 1 CIDR
+      PrivateSubnet2CIDR:
+        default: Private Subnet 2 CIDR
 
 Parameters:
   CreateNewVPC: 
@@ -72,18 +80,24 @@ Resources:
     Properties:
       Parameters:
         AppName: !Ref AppName
-        VpcCIDR: VpcCIDR
-        PublicSubnet1CIDR: PublicSubnet1CIDR
-        PublicSubnet2CIDR: PublicSubnet2CIDR
-        PrivateSubnet1CIDR: PrivateSubnet1CIDR
-        PrivateSubnet2CIDR: PrivateSubnet2CIDR
+        VpcCIDR: !Ref VpcCIDR
+        PublicSubnet1CIDR: !Ref PublicSubnet1CIDR
+        PublicSubnet2CIDR: !Ref PublicSubnet2CIDR
+        PrivateSubnet1CIDR: !Ref PrivateSubnet1CIDR
+        PrivateSubnet2CIDR: !Ref PrivateSubnet2CIDR
       TemplateURL: https://s3-us-west-2.amazonaws.com/cf-templates-f1qzfv4c2gms-us-west-2/create-vpc.yaml
       TimeoutInMinutes: '6'
-    Tags:
-      - Key: Name
-        Value: !Sub ${AWS::StackName}-ConfigVPC
+      Tags:
+        - Key: Name
+          Value: !Sub ${AWS::StackName}-ConfigVPC
 
 Outputs:
   VPC:
     Value: !Sub ${ConfigVPC.Outputs.VPC}
     Description: VPC name for environment
+  PublicSubnets:
+    Value: !Sub ${ConfigVPC.Outputs.PublicSubnets}
+    Description: A list of the public subnets
+  PrivateSubnets:
+    Value: !Sub ${ConfigVPC.Outputs.PrivateSubnets}
+    Description: A list of the private subnets
