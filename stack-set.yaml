@@ -12,7 +12,12 @@ Metadata:
       - Label:
           default: Network setup
         Parameters:
-          - VpcCidr
+          - CreateNewVPC
+          - VpcCIDR
+          - PublicSubnet1CIDR
+          - PublicSubnet2CIDR
+          - PrivateSubnet1CIDR
+          - PrivateSubnet2CIDR
     ParameterLabels:
       AppName:
         default: Name of Application/Organization
@@ -29,13 +34,33 @@ Parameters:
 
   AppName: 
     Type: String
-    Default: TestApp
+    Default: test-app-dev
     Description: Name of your application or organization
-  VpcCidr: 
+  VpcCIDR: 
     Type: String
-    Default: 10.0.0.0/24
+    Default: 10.0.0.0/16
     AllowedPattern: "^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])(\\/(\\d|[1-2]\\d|3[0-2]))?$"
-    Description: Enter VPC network with mask like 192.168.0.0/24 or 10.0.0.0/24
+    Description: Enter VPC IP range (CIDR)  x.x.x.x/y (x=1 to 255, y=1 to 32)
+  PublicSubnet1CIDR:
+    Type: String
+    Default: 10.0.10.0/24
+    AllowedPattern: "^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])(\\/(\\d|[1-2]\\d|3[0-2]))?$"
+    Description: Enter Subnet IP range (CIDR) for the public subnet in the first Availability Zone
+  PublicSubnet2CIDR:
+    Type: String
+    Default: 10.0.20.0/24
+    AllowedPattern: "^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])(\\/(\\d|[1-2]\\d|3[0-2]))?$"
+    Description: Enter Subnet IP range (CIDR) for the public subnet in the second Availability Zone
+  PrivateSubnet1CIDR:
+    Type: String
+    Default: 10.0.11.0/24
+    AllowedPattern: "^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])(\\/(\\d|[1-2]\\d|3[0-2]))?$"
+    Description: Enter Subnet IP range (CIDR) for the private subnet in the first Availability Zone
+  PrivateSubnet2CIDR:
+    Type: String
+    Default: 10.0.21.0/24
+    AllowedPattern: "^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])(\\/(\\d|[1-2]\\d|3[0-2]))?$"
+    Description: Enter Subnet IP range (CIDR) for the private subnet in the second Availability Zone
 
 Conditions:
   CreateVPC: !Equals [!Ref CreateNewVPC, true]
@@ -47,8 +72,13 @@ Resources:
     Properties:
       Parameters:
         AppName: !Ref AppName
+        VpcCIDR: VpcCIDR
+        PublicSubnet1CIDR: PublicSubnet1CIDR
+        PublicSubnet2CIDR: PublicSubnet2CIDR
+        PrivateSubnet1CIDR: PrivateSubnet1CIDR
+        PrivateSubnet2CIDR: PrivateSubnet2CIDR
       TemplateURL: https://s3-us-west-2.amazonaws.com/cf-templates-f1qzfv4c2gms-us-west-2/create-vpc.yaml
-      TimeoutInMinutes: '1'
+      TimeoutInMinutes: '6'
     Tags:
       - Key: Name
         Value: !Sub ${AWS::StackName}-ConfigVPC
