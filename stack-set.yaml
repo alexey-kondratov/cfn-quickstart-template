@@ -49,6 +49,9 @@ Resources:
         AppName: !Ref AppName
       TemplateURL: https://s3-us-west-2.amazonaws.com/cf-templates-f1qzfv4c2gms-us-west-2/create-vpc.yaml
       TimeoutInMinutes: '1'
+    Tags:
+      - Key: Name
+        Value: !Sub ${AWS::StackName}-ConfigVPC
 
 Outputs:
   VPC:
