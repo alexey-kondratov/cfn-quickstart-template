@@ -7,3 +7,55 @@ Parameters:
     Type: String
     Default: test-app-dev
     Description: Name of your application or organization
+  VpcCIDR:
+    Type: AWS::EC2::VPC::Id
+    Description: Select a VPC that allows instances access to the Internet.
+  SubnetId:
+    Type: List<AWS::EC2::Subnet::Id>
+    Description: Select at two subnets in your selected VPC.
+  InstanceType:
+    Description: EC2 instance type
+    Type: String
+    Default: t3.micro
+    AllowedValues: [t3.micro, t3.small, t3.medium, t3.large, t2.micro, t2.small, 
+      t2.medium, t2.large, m3.medium, m3.large,
+      m3.xlarge, m3.2xlarge, m4.large, m4.xlarge, m4.2xlarge, m4.4xlarge, m4.10xlarge,
+      c4.large, c4.xlarge, c4.2xlarge, c4.4xlarge, c4.8xlarge, c3.large, c3.xlarge,
+      c3.2xlarge, c3.4xlarge, c3.8xlarge, r3.large, r3.xlarge, r3.2xlarge, r3.4xlarge,
+      r3.8xlarge, i2.xlarge, i2.2xlarge, i2.4xlarge, i2.8xlarge]
+    ConstraintDescription: Please choose a valid instance type.
+
+Mappings:
+  AWSRegionToAMI:
+    us-east-2:
+      AMIID: ami-0f7f8edb4fe82cf70
+    us-east-1:
+      AMIID: ami-0bf2fb355727b7faf
+    us-west-1:
+      AMIID: ami-082091011e69ea8a8
+    us-west-2:
+      AMIID: ami-0d3bd9852d477ade8
+    ap-south-1:
+      AMIID: ami-074d7facdfdfd9ee2
+    ap-northeast-2:
+      AMIID: ami-0c0acda930d2bb85a
+    ap-southeast-1:
+      AMIID: ami-04770d89e9dedfa8b
+    ap-southeast-2:
+      AMIID: ami-0a7936ea6d7d16c6d
+    ap-northeast-1:
+      AMIID: ami-0e5c7bfb31b5e577e
+    ca-central-1:
+      AMIID: ami-093533dfa5b9a14ff
+    eu-central-1:
+      AMIID: ami-08b3fd22c78a217d5
+    eu-west-1:
+      AMIID: ami-0728d926f3f65c089
+    eu-west-2:
+      AMIID: ami-0376206bb575c76dd
+    eu-west-3:
+      AMIID: ami-067e52f6552e2dac1
+    eu-north-1:
+      AMIID: ami-0f462e20379b1cc66
+    sa-east-1:
+      AMIID: ami-09870f8efd9314b59
