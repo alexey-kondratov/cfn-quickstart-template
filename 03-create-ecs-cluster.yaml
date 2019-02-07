@@ -1,0 +1,9 @@
+---
+AWSTemplateFormatVersion: '2010-09-09'
+Desription: ECS cluster set up
+
+Parameters:
+  AppName: 
+    Type: String
+    Default: test-app-dev
+    Description: Name of your application or organization
