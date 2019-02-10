@@ -18,6 +18,13 @@ Metadata:
           - PublicSubnet2CIDR
           - PrivateSubnet1CIDR
           - PrivateSubnet2CIDR
+      - Label:
+          default: ECS Cluster setup
+        Parameters:
+          - ECSInstanceType
+          - ECSDesiredClusterSize
+          - ECSMaxClusterSize
+          - ECSKeyPair
     ParameterLabels:
       AppName:
         default: Name of App/Org
@@ -33,13 +40,13 @@ Metadata:
         default: Private Subnet 2 CIDR
 
 Parameters:
+  # 01-stack-set
   CreateNewVPC: 
     Description: Create new VPC?
     Default: true
     Type: String
     AllowedValues: [true, false]
     ConstraintDescription: Create new VPC or use exist
-
   AppName: 
     Type: String
     Default: test-app-dev
@@ -69,6 +76,29 @@ Parameters:
     Default: 10.0.21.0/24
     AllowedPattern: "^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])(\\/(\\d|[1-2]\\d|3[0-2]))?$"
     Description: Enter Subnet IP range (CIDR) for the private subnet in the second Availability Zone
+  # 03-create-ecs-cluster
+  ECSInstanceType:
+    Description: EC2 instance type
+    Type: String
+    Default: t2.micro
+    AllowedValues: [t3.micro, t3.small, t3.medium, t3.large, t2.micro, t2.small,
+      t2.medium, t2.large, m3.medium, m3.large, m3.xlarge, m3.2xlarge, m4.large,
+      m4.xlarge, m4.2xlarge, m4.4xlarge, m4.10xlarge, c4.large, c4.xlarge,
+      c4.2xlarge, c4.4xlarge, c4.8xlarge, c3.large, c3.xlarge, c3.2xlarge,
+      c3.4xlarge, c3.8xlarge, r3.large, r3.xlarge, r3.2xlarge, r3.4xlarge,
+      r3.8xlarge, i2.xlarge, i2.2xlarge, i2.4xlarge, i2.8xlarge]
+    ConstraintDescription: Please choose a valid instance type.
+  ECSDesiredClusterSize:
+    Description: Number of instances to launch in your ECS cluster.
+    Type: Number
+    Default: 1
+  ECSMaxClusterSize:
+    Description: Maximum number of instances that can be launched in your ECS cluster.
+    Type: Number
+    Default: 2
+  ECSKeyPair:
+    Type: AWS::EC2::KeyPair::KeyName
+    Description: Name of an existing EC2 KeyPair to enable SSH access to the ECS instances.
 
 Conditions:
   CreateVPC: !Equals [!Ref CreateNewVPC, true]
@@ -86,10 +116,26 @@ Resources:
         PrivateSubnet1CIDR: !Ref PrivateSubnet1CIDR
         PrivateSubnet2CIDR: !Ref PrivateSubnet2CIDR
       TemplateURL: https://s3-us-west-2.amazonaws.com/cf-templates-f1qzfv4c2gms-us-west-2/01-create-vpc.yaml
-      TimeoutInMinutes: '6'
+      TimeoutInMinutes: '5'
       Tags:
         - Key: Name
           Value: !Sub ${AWS::StackName}-ConfigVPC
+  ConfigECS:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      Parameters:
+        AppName: !Ref AppName
+        VpcCIDR: !Sub ${ConfigVPC.Outputs.VpcId}
+        SubnetId: !Sub ${ConfigVPC.Outputs.PublicSubnets}
+        InstanceType: !Ref ECSInstanceType
+        DesiredClusterSize: !Ref ECSDesiredClusterSize
+        MaxClusterSize: !Ref ECSMaxClusterSize
+        KeyName: !Ref ECSKeyPair
+      TemplateURL: https://s3-us-west-2.amazonaws.com/cf-templates-f1qzfv4c2gms-us-west-2/03-create-ecs-cluster.yaml
+      TimeoutInMinutes: '10'
+      Tags:
+        - Key: Name
+          Value: !Sub ${AWS::StackName}-ConfigECS
 
 Outputs:
   VPC:
