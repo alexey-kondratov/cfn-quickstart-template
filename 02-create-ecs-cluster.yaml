@@ -161,7 +161,7 @@ Resources:
             Service: [ec2.amazonaws.com]
           Action: ['sts:AssumeRole']
       Policies:
-      - PolicyName: ecs-service
+      - PolicyName: ${AppName}-ecs-log-readwrite-iam-policy
         PolicyDocument:
           Statement:
           - Effect: Allow
