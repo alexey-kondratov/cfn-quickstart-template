@@ -74,6 +74,7 @@ Resources:
   BastionLaunchConfiguration:
     Type: AWS::AutoScaling::LaunchConfiguration
     Properties:
+      LaunchConfigurationName: !Sub ${AppName}-devops-lc
       AssociatePublicIpAddress: 'true'
       KeyName: !Ref 'KeyName'
       IamInstanceProfile: !Ref 'BastionHostProfile'
@@ -85,7 +86,7 @@ Resources:
     Type: AWS::EC2::SecurityGroup
     Properties:
       GroupDescription: Enables SSH Access to Bastion Hosts
-      VpcId: !Ref 'VPCID'
+      VpcId: !Ref 'VpcCIDR'
       SecurityGroupIngress:
         - IpProtocol: tcp
           FromPort: '22'
@@ -95,6 +96,9 @@ Resources:
           FromPort: '-1'
           ToPort: '-1'
           CidrIp: !Ref 'RemoteAccessCIDR'
+      Tags:
+        - Key: Name
+          Value: !Sub ${AppName}-devops-instance-sg
   BastionHostProfile:
     Type: AWS::IAM::InstanceProfile
     Properties:
@@ -112,13 +116,21 @@ Resources:
             Service: [ec2.amazonaws.com]
           Action: ['sts:AssumeRole']
       Policies:
-      - PolicyName: policy-name
+      - PolicyName: !Sub ${AppName}-ec2-describe-iam-policy
         PolicyDocument:
           Statement:
           - Effect: Allow
-            Action: ['autoscaling:Describe*', 'autoscaling:UpdateAutoScalingGroup', 'cloudformation:CreateStack', 'cloudformation:DeleteStack',
-              'cloudformation:DescribeStack*', 'cloudformation:UpdateStack', 'cloudwatch:GetMetricStatistics', 'ec2:Describe*',
-              'elasticloadbalancing:*', 'ecs:*', 'events:DescribeRule', 'events:DeleteRule', 'events:ListRuleNamesByTarget',
-              'events:ListTargetsByRule', 'events:PutRule', 'events:PutTargets', 'events:RemoveTargets', 'iam:ListInstanceProfiles',
-              'iam:ListRoles', 'iam:PassRole', 's3:ListAllMyBuckets', 's3:ListBucket']
+            Action: ['ec2:Describe*']
+            Resource: '*'
+      - PolicyName: !Sub ${AppName}-ecs-readwrite-iam-policy
+        PolicyDocument:
+          Statement:
+          - Effect: Allow
+            Action: ['ecs:*']
+            Resource: '*'
+      - PolicyName: !Sub ${AppName}-s3-read-iam-policy
+        PolicyDocument:
+          Statement:
+          - Effect: Allow
+            Action: ['s3:ListAllMyBuckets', 's3:ListBucket']
             Resource: '*'
