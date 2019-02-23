@@ -30,7 +30,9 @@ Parameters:
     Default: "0.0.0.0/24"
     Description: Allowed CIDR block for external SSH access to the bastions
     ConstraintDescription: CIDR block parameter must be in the form x.x.x.x/x
-    
+  KeyName:
+    Type: AWS::EC2::KeyPair::KeyName
+    Description: Name of an existing EC2 KeyPair to enable SSH access to the Bastion instance.
 
 # It's crossregion AMI map for "CentOS 7 (x86_64) - with Updates HVM" AMI for febrary 2019
 Mappings:
@@ -67,3 +69,56 @@ Mappings:
       AMIID: ami-5ee66f20
     sa-east-1:
       AMIID: ami-0b8d86d4bf91850af
+
+Resources:
+  BastionLaunchConfiguration:
+    Type: AWS::AutoScaling::LaunchConfiguration
+    Properties:
+      AssociatePublicIpAddress: 'true'
+      KeyName: !Ref 'KeyName'
+      IamInstanceProfile: !Ref 'BastionHostProfile'
+      ImageId: !FindInMap [AWSRegionToAMI, !Ref 'AWS::Region', AMIID]
+      SecurityGroups:
+        - !Ref 'BastionSecurityGroup'
+      InstanceType: !Ref 'InstanceType'
+  BastionSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Enables SSH Access to Bastion Hosts
+      VpcId: !Ref 'VPCID'
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: '22'
+          ToPort: '22'
+          CidrIp: !Ref 'RemoteAccessCIDR'
+        - IpProtocol: icmp
+          FromPort: '-1'
+          ToPort: '-1'
+          CidrIp: !Ref 'RemoteAccessCIDR'
+  BastionHostProfile:
+    Type: AWS::IAM::InstanceProfile
+    Properties:
+      Path: /
+      Roles: [!Ref 'BastionHostRole']
+  BastionHostRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub ${AppName}-devops-instance-iam-role
+      Path: /
+      AssumeRolePolicyDocument:
+        Statement:
+        - Effect: Allow
+          Principal:
+            Service: [ec2.amazonaws.com]
+          Action: ['sts:AssumeRole']
+      Policies:
+      - PolicyName: policy-name
+        PolicyDocument:
+          Statement:
+          - Effect: Allow
+            Action: ['autoscaling:Describe*', 'autoscaling:UpdateAutoScalingGroup', 'cloudformation:CreateStack', 'cloudformation:DeleteStack',
+              'cloudformation:DescribeStack*', 'cloudformation:UpdateStack', 'cloudwatch:GetMetricStatistics', 'ec2:Describe*',
+              'elasticloadbalancing:*', 'ecs:*', 'events:DescribeRule', 'events:DeleteRule', 'events:ListRuleNamesByTarget',
+              'events:ListTargetsByRule', 'events:PutRule', 'events:PutTargets', 'events:RemoveTargets', 'iam:ListInstanceProfiles',
+              'iam:ListRoles', 'iam:PassRole', 's3:ListAllMyBuckets', 's3:ListBucket']
+            Resource: '*'
