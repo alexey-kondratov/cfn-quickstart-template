@@ -132,7 +132,6 @@ Resources:
       SecurityGroups: [!Ref 'EcsSecurityGroup']
       InstanceType: !Ref 'InstanceType'
       IamInstanceProfile: !Ref 'EC2InstanceProfile'
-      EbsOptimized: 'true'
       KeyName: !Ref 'KeyName'
       UserData:
         Fn::Base64: !Sub |
@@ -366,3 +365,8 @@ Outputs:
     Value: !Join ['', [!GetAtt [ECSALB, DNSName]]]
   taskdef:
     Value: !Ref 'EcsTaskDefinition'
+  ECSSecurityGroupID:
+    Description: ECS Security Group ID
+    Value: !Ref 'EcsSecurityGroup'
+    Export:
+      Name: !Sub '${AWS::StackName}-ECSSecurityGroupID'

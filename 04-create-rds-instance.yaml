@@ -1,0 +1,112 @@
+---
+AWSTemplateFormatVersion: '2010-09-09'
+Description: RDS instance setup
+
+Parameters:
+  AppName: 
+    Type: String
+    Default: test-app-dev
+    Description: Name of your application or organization
+  VpcCIDR:
+    Type: AWS::EC2::VPC::Id
+    Description: Select a VPC that allows RDS access to the Internet.
+  DBName:
+    Default: MyDatabase
+    Description: The database name
+    Type: String
+    MinLength: '1'
+    MaxLength: '64'
+    Default: 'DBName'
+    AllowedPattern: '[a-zA-Z][a-zA-Z0-9]*'
+    ConstraintDescription: must begin with a letter and contain only alphanumeric
+      characters.
+  DBUser:
+    Type: String
+    Description: The database admin account username
+    NoEcho: 'true'
+    MinLength: '1'
+    MaxLength: '16'
+    Default: 'DBUser'
+    AllowedPattern: '[a-zA-Z][a-zA-Z0-9]*'
+    ConstraintDescription: must begin with a letter and contain only alphanumeric
+      characters.
+  DBPassword:
+    Type: String
+    Description: The database admin account password
+    NoEcho: 'true'
+    MinLength: '8'
+    MaxLength: '41'
+    Default: 'Qwerty123'
+    AllowedPattern: '[a-zA-Z0-9]*'
+    ConstraintDescription: must contain only alphanumeric characters.
+  GbStorage:
+    Type: Number
+    Default: '20'
+    MinValue: '20'
+    MaxValue: '1024'
+    Description: The size of the database (Gb)
+  DBInstanceClass:
+    Type: String
+    Default: db.t2.micro
+    AllowedValues: [db.t1.micro, db.m1.small, db.m1.medium, db.m1.large, db.m1.xlarge,
+      db.m2.xlarge, db.m2.2xlarge, db.m2.4xlarge, db.m3.medium, db.m3.large, db.m3.xlarge,
+      db.m3.2xlarge, db.m4.large, db.m4.xlarge, db.m4.2xlarge, db.m4.4xlarge, db.m4.10xlarge,
+      db.r3.large, db.r3.xlarge, db.r3.2xlarge, db.r3.4xlarge, db.r3.8xlarge, db.m2.xlarge,
+      db.m2.2xlarge, db.m2.4xlarge, db.cr1.8xlarge, db.t2.micro, db.t2.small, db.t2.medium,
+      db.t2.large]
+    ConstraintDescription: must select a valid database instance type.
+    Description: The database instance type
+  EC2SecurityGroupID:
+    Type: String
+    Default: default
+    AllowedPattern: '[a-zA-Z0-9\-]+'
+    ConstraintDescription: must be a valid security group ID.
+    Description: The EC2 security group that contains instances that need access to
+      the database
+  MultiAZ:
+    Type: String
+    Description: Multi-AZ master database
+    Default: 'false'
+    AllowedValues: ['true', 'false']
+    ConstraintDescription: must be true or false.
+  SubnetId:
+    Type: List<AWS::EC2::Subnet::Id>
+    Description: Select at two subnets in your selected VPC.
+Resources:
+  MyDB:
+    Type: AWS::RDS::DBInstance
+    Properties:
+      DBInstanceIdentifier: !Sub ${AppName}-mysql-standalone
+      DBName: !Ref 'DBName'
+      AllocatedStorage: !Ref 'GbStorage'
+      DBInstanceClass: !Ref 'DBInstanceClass'
+      StorageType: gp2
+      Engine: MySQL
+      MultiAZ: !Ref 'MultiAZ'
+      EngineVersion: 5.6.41
+      MasterUsername: !Ref 'DBUser'
+      MasterUserPassword: !Ref 'DBPassword'
+      DBSecurityGroups: [!Ref 'DBSecurityGroup']
+      DBSubnetGroupName: !Ref 'DBSubnetGroup'
+      Tags:
+      - Key: Name
+        Value: !Sub ${AppName}-mysql-standalone
+    DeletionPolicy: Snapshot
+  DBSecurityGroup:
+    Type: AWS::RDS::DBSecurityGroup
+    Properties:
+      EC2VpcId: !Ref 'VpcCIDR'
+      DBSecurityGroupIngress:
+        EC2SecurityGroupId: !Ref 'EC2SecurityGroupID'
+      GroupDescription: database access
+      Tags: 
+      - Key: Name
+        Value: !Sub ${AppName}-db-mysql-sg
+  DBSubnetGroup:
+    Type: AWS::RDS::DBSubnetGroup
+    Properties:
+      DBSubnetGroupDescription: Group of subnets for RDS
+      SubnetIds: !Ref 'SubnetId'
+      Tags: 
+      - Key: Name
+        Value: !Sub ${AppName}-mysql-subnetgroup

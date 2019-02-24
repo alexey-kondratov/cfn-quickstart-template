@@ -33,6 +33,16 @@ Metadata:
           - BastionKeyPair
           - DesiredNumBastionHosts
           - MaxNumBastionHosts
+      - Label:
+          default: RDS host setup
+        Parameters:
+          - DBName
+          - DBUser
+          - DBPassword
+          - RDSGbStorage
+          - DBInstanceClass
+          - RDSMultiAZ
+
     ParameterLabels:
       AppName:
         default: Name of App/Org
@@ -49,12 +59,12 @@ Metadata:
 
 Parameters:
   # 01-stack-set
-  CreateNewVPC: 
-    Description: Create new VPC?
+  CreateRdsInstance: 
+    Description: Create RDS Instance?
     Default: true
     Type: String
     AllowedValues: [true, false]
-    ConstraintDescription: Create new VPC or use exist
+    ConstraintDescription: Create new RDS
   AppName: 
     Type: String
     Default: test-app-dev
@@ -136,13 +146,66 @@ Parameters:
     Description: Max number of bastion hosts to launch
     Type: Number
     Default: 1
+  # 04-create-rds-instance
+  DBName:
+    Default: MyDatabase
+    Description: The database name
+    Type: String
+    MinLength: '1'
+    MaxLength: '64'
+    Default: 'DBName'
+    AllowedPattern: '[a-zA-Z][a-zA-Z0-9]*'
+    ConstraintDescription: must begin with a letter and contain only alphanumeric
+      characters.
+  DBUser:
+    Type: String
+    Description: The database admin account username
+    NoEcho: 'true'
+    MinLength: '1'
+    MaxLength: '16'
+    Default: 'DBUser'
+    AllowedPattern: '[a-zA-Z][a-zA-Z0-9]*'
+    ConstraintDescription: must begin with a letter and contain only alphanumeric
+      characters.
+  DBPassword:
+    Type: String
+    Description: The database admin account password
+    NoEcho: 'true'
+    MinLength: '8'
+    MaxLength: '41'
+    Default: 'Qwerty123'
+    AllowedPattern: '[a-zA-Z0-9]*'
+    ConstraintDescription: must contain only alphanumeric characters.
+  RDSGbStorage:
+    Type: Number
+    Default: '20'
+    MinValue: '20'
+    MaxValue: '1024'
+    Description: The size of the database (Gb)
+  DBInstanceClass:
+    Type: String
+    Default: db.t2.micro
+    AllowedValues: [db.t1.micro, db.m1.small, db.m1.medium, db.m1.large, db.m1.xlarge,
+      db.m2.xlarge, db.m2.2xlarge, db.m2.4xlarge, db.m3.medium, db.m3.large, db.m3.xlarge,
+      db.m3.2xlarge, db.m4.large, db.m4.xlarge, db.m4.2xlarge, db.m4.4xlarge, db.m4.10xlarge,
+      db.r3.large, db.r3.xlarge, db.r3.2xlarge, db.r3.4xlarge, db.r3.8xlarge, db.m2.xlarge,
+      db.m2.2xlarge, db.m2.4xlarge, db.cr1.8xlarge, db.t2.micro, db.t2.small, db.t2.medium,
+      db.t2.large]
+    ConstraintDescription: must select a valid database instance type.
+    Description: The database instance type
+  RDSMultiAZ:
+    Type: String
+    Description: Multi-AZ master database
+    Default: 'false'
+    AllowedValues: ['true', 'false']
+    ConstraintDescription: must be true or false.
+
 Conditions:
-  CreateVPC: !Equals [!Ref CreateNewVPC, true]
+  CreateRDS: !Equals [!Ref CreateRdsInstance, true]
 
 Resources:
   ConfigVPC:
     Type: AWS::CloudFormation::Stack
-    Condition: CreateVPC
     Properties:
       Parameters:
         AppName: !Ref AppName
@@ -190,6 +253,27 @@ Resources:
       Tags:
         - Key: Name
           Value: !Sub ${AWS::StackName}-ConfigBastionHost
+  ConfigRDS:
+    Condition: CreateRDS
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      Parameters:
+        AppName: !Ref AppName
+        VpcCIDR: !Sub ${ConfigVPC.Outputs.VpcId}
+        SubnetId: !Sub ${ConfigVPC.Outputs.PrivateSubnets}
+        DBName: !Ref DBName
+        DBUser: !Ref DBUser
+        DBPassword: !Ref DBPassword
+        GbStorage: !Ref RDSGbStorage
+        DBInstanceClass: !Ref DBInstanceClass
+        EC2SecurityGroupID: !Sub ${ConfigECS.Outputs.ECSSecurityGroupID}
+        MultiAZ: !Ref RDSMultiAZ
+      TemplateURL: https://s3-us-west-2.amazonaws.com/cf-templates-f1qzfv4c2gms-us-west-2/03-create-jenkins-instance.yaml
+      TimeoutInMinutes: '15'
+      Tags:
+        - Key: Name
+          Value: !Sub ${AWS::StackName}-ConfigRDS
+
 Outputs:
   VPC:
     Value: !Sub ${ConfigVPC.Outputs.VPC}
