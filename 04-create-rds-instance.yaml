@@ -13,6 +13,7 @@ Parameters:
     Type: String
     MinLength: '1'
     MaxLength: '64'
+    Default: 'DBName'
     AllowedPattern: '[a-zA-Z][a-zA-Z0-9]*'
     ConstraintDescription: must begin with a letter and contain only alphanumeric
       characters.
@@ -22,6 +23,7 @@ Parameters:
     NoEcho: 'true'
     MinLength: '1'
     MaxLength: '16'
+    Default: 'DBUser'
     AllowedPattern: '[a-zA-Z][a-zA-Z0-9]*'
     ConstraintDescription: must begin with a letter and contain only alphanumeric
       characters.
@@ -31,10 +33,12 @@ Parameters:
     NoEcho: 'true'
     MinLength: '8'
     MaxLength: '41'
+    Default: 'Qwerty123'
     AllowedPattern: '[a-zA-Z0-9]*'
     ConstraintDescription: must contain only alphanumeric characters.
   GbStorage:
     Type: Number
+    Default: '20'
     Description: Enter AllocatedStorage count (Min:20 Max:16384)
 
 
