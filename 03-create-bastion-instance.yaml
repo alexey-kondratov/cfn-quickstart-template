@@ -187,6 +187,7 @@ Resources:
           - Effect: Allow
             Action: ['ec2:AssociateAddress', 'ec2:DisassociateAddress']
             Resource: '*'
+
 Outputs:
   BastionAutoScalingGroup:
     Description: Auto Scaling Group Reference ID
