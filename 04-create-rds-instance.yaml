@@ -3,6 +3,10 @@ AWSTemplateFormatVersion: '2010-09-09'
 Description: RDS instance setup
 
 Parameters:
+  AppName: 
+    Type: String
+    Default: test-app-dev
+    Description: Name of your application or organization
   DBName:
     Default: MyDatabase
     Description: The database name
@@ -13,19 +17,39 @@ Parameters:
     ConstraintDescription: must begin with a letter and contain only alphanumeric
       characters.
   DBUser:
-    NoEcho: 'true'
-    Description: The database admin account username
     Type: String
+    Description: The database admin account username
+    NoEcho: 'true'
     MinLength: '1'
     MaxLength: '16'
     AllowedPattern: '[a-zA-Z][a-zA-Z0-9]*'
     ConstraintDescription: must begin with a letter and contain only alphanumeric
       characters.
   DBPassword:
-    NoEcho: 'true'
-    Description: The database admin account password
     Type: String
+    Description: The database admin account password
+    NoEcho: 'true'
     MinLength: '8'
     MaxLength: '41'
     AllowedPattern: '[a-zA-Z0-9]*'
     ConstraintDescription: must contain only alphanumeric characters.
+  GbStorage:
+    Type: Number
+    Description: Enter AllocatedStorage count (Min:20 Max:16384)
+
+
+Resources:
+  MyDB:
+    Type: AWS::RDS::DBInstance
+    Properties:
+      DBName: !Ref 'DBName'
+      AllocatedStorage: !Ref 'GbStorage'
+      DBInstanceClass: db.t2.micro
+      StorageType: gp2
+      Engine: MySQL
+      MultiAZ: 'false'
+      EngineVersion: 5.6.19
+      MasterUsername: !Ref 'DBUser'
+      MasterUserPassword: !Ref 'DBPassword'
+      DBParameterGroupName: !Ref 'MyRDSParamGroup'
+      SourceDBInstanceIdentifier: !Sub ${AppName}-mysql-standalone
