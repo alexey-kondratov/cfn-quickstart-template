@@ -7,6 +7,9 @@ Parameters:
     Type: String
     Default: test-app-dev
     Description: Name of your application or organization
+  VpcCIDR:
+    Type: AWS::EC2::VPC::Id
+    Description: Select a VPC that allows RDS access to the Internet.
   DBName:
     Default: MyDatabase
     Description: The database name
@@ -53,18 +56,57 @@ Parameters:
       db.t2.large]
     ConstraintDescription: must select a valid database instance type.
     Description: The database instance type
+  EC2SecurityGroupID:
+    Type: String
+    Default: default
+    AllowedPattern: '[a-zA-Z0-9\-]+'
+    ConstraintDescription: must be a valid security group ID.
+    Description: The EC2 security group that contains instances that need access to
+      the database
+  MultiAZ:
+    Type: String
+    Description: Multi-AZ master database
+    Default: 'false'
+    AllowedValues: ['true', 'false']
+    ConstraintDescription: must be true or false.
+  SubnetId:
+    Type: List<AWS::EC2::Subnet::Id>
+    Description: Select at two subnets in your selected VPC.
 Resources:
   MyDB:
     Type: AWS::RDS::DBInstance
     Properties:
+      DBInstanceIdentifier: !Sub ${AppName}-mysql-standalone
       DBName: !Ref 'DBName'
       AllocatedStorage: !Ref 'GbStorage'
       DBInstanceClass: !Ref 'DBInstanceClass'
       StorageType: gp2
       Engine: MySQL
-      MultiAZ: 'false'
-      EngineVersion: 5.6.19
+      MultiAZ: !Ref 'MultiAZ'
+      EngineVersion: 5.6.41
       MasterUsername: !Ref 'DBUser'
       MasterUserPassword: !Ref 'DBPassword'
-      DBParameterGroupName: !Ref 'MyRDSParamGroup'
-      SourceDBInstanceIdentifier: !Sub ${AppName}-mysql-standalone
+      DBSecurityGroups: [!Ref 'DBSecurityGroup']
+      DBSubnetGroupName: !Ref 'DBSubnetGroup'
+      Tags:
+      - Key: Name
+        Value: !Sub ${AppName}-mysql-standalone
+    DeletionPolicy: Snapshot
+  DBSecurityGroup:
+    Type: AWS::RDS::DBSecurityGroup
+    Properties:
+      EC2VpcId: !Ref 'VpcCIDR'
+      DBSecurityGroupIngress:
+        EC2SecurityGroupId: !Ref 'EC2SecurityGroupID'
+      GroupDescription: database access
+      Tags: 
+      - Key: Name
+        Value: !Sub ${AppName}-db-mysql-sg
+  DBSubnetGroup:
+    Type: AWS::RDS::DBSubnetGroup
+    Properties:
+      DBSubnetGroupDescription: Group of subnets for RDS
+      SubnetIds: !Ref 'SubnetId'
+      Tags: 
+      - Key: Name
+        Value: !Sub ${AppName}-mysql-subnetgroup
