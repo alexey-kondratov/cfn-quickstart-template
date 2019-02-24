@@ -18,4 +18,4 @@ Or you can use two templates in the .init / directory (With caution and understa
     * **A:** To do so please visit https://aws.amazon.com/marketplace/pp?sku=aw0evgkw8e5c1q413zgy5pjce. Then, Continue to Subscribe .
 
 #### Notice:
-- at the moment, the resource 'AWS::EC2::EIP' does not have the parameter 'Tag', or another parameter that would allow it to be assigned to the Elastic IP. (24 Feb 2019)
+- at the moment, the resource 'AWS::EC2::EIP' does not have the parameter 'Tag', or another parameter that would allow to choose name the Elastic IP. (24 Feb 2019)
