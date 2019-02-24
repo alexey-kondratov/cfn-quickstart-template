@@ -116,14 +116,17 @@ Resources:
       UserData: 
         Fn::Base64: !Sub |
           #!/bin/bash -xe
-          yup update -y
+          exec > >(tee /var/log/user-data.log|logger -t user-data -s 2>/dev/console) 2>&1
+          yum update -y
           yum install -y epel-release
           yum install -y python-pip
           pip install --upgrade pip &> /dev/null
           pip install awscli --ignore-installed six &> /dev/null
           easy_install https://s3.amazonaws.com/cloudformation-examples/aws-cfn-bootstrap-latest.tar.gz
-          EIP_LIST=${EIP}
-          cfn-init -v --stack ${AWS::StackName} --resource BastionLaunchConfiguration --region ${AWS::Region}
+          # associate Elastic IP
+          INSTANCE_ID=$(curl -s http://169.254.169.254/latest/meta-data/instance-id)
+          aws ec2 associate-address --region ${AWS::Region} --instance-id $INSTANCE_ID --allocation-id ${EIP.AllocationId} --allow-reassociation
+          # send successfull signal if ok
           cfn-signal -e $? --stack ${AWS::StackName} --resource BastionAutoScalingGroup --region ${AWS::Region}
   BastionSecurityGroup:
     Type: AWS::EC2::SecurityGroup
@@ -184,4 +187,24 @@ Resources:
           - Effect: Allow
             Action: ['ec2:AssociateAddress', 'ec2:DisassociateAddress']
             Resource: '*'
-  
+Outputs:
+  BastionAutoScalingGroup:
+    Description: Auto Scaling Group Reference ID
+    Value: !Ref 'BastionAutoScalingGroup'
+    Export:
+      Name: !Sub '${AWS::StackName}-BastionAutoScalingGroup'
+  EIP:
+    Description: Elastic IP 1 for Bastion
+    Value: !Ref 'EIP'
+    Export:
+      Name: !Sub '${AWS::StackName}-EIP'
+  BastionSecurityGroupID:
+    Description: Bastion Security Group ID
+    Value: !Ref 'BastionSecurityGroup'
+    Export:
+      Name: !Sub '${AWS::StackName}-BastionSecurityGroupID'
+  BastionHostRole:
+    Description: Bastion IAM Role name
+    Value: !Ref 'BastionHostRole'
+    Export:
+      Name: !Sub '${AWS::StackName}-BastionHostRole'
