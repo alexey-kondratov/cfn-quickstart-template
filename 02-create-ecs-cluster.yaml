@@ -35,6 +35,9 @@ Parameters:
   KeyName:
     Type: AWS::EC2::KeyPair::KeyName
     Description: Name of an existing EC2 KeyPair to enable SSH access to the ECS instances.
+  BastionSecurityGroupID:
+    Description: Security group ID of Bastion host for secure access.
+    Type: String
 
 # It's crossregion AMI map for ecs optimized updated AMI for febrary 2019
 Mappings:
@@ -86,14 +89,6 @@ Resources:
       Tags:
         - Key: Name
           Value: !Sub ${AppName}-ecs-instance-sg
-  EcsSecurityGroupHTTPinbound:
-    Type: AWS::EC2::SecurityGroupIngress
-    Properties:
-      GroupId: !Ref 'EcsSecurityGroup'
-      IpProtocol: tcp
-      FromPort: '80'
-      ToPort: '80'
-      CidrIp: 0.0.0.0/0
   EcsSecurityGroupSSHinbound:
     Type: AWS::EC2::SecurityGroupIngress
     Properties:
@@ -101,7 +96,7 @@ Resources:
       IpProtocol: tcp
       FromPort: '22'
       ToPort: '22'
-      CidrIp: 0.0.0.0/0
+      SourceSecurityGroupId: !Ref 'BastionSecurityGroupID'
   EcsSecurityGroupALBports:
     Type: AWS::EC2::SecurityGroupIngress
     Properties:

@@ -167,6 +167,7 @@ Resources:
         DesiredClusterSize: !Ref ECSDesiredClusterSize
         MaxClusterSize: !Ref ECSMaxClusterSize
         KeyName: !Ref ECSKeyPair
+        BastionSecurityGroupID: !Sub ${ConfigBastionHost.Outputs.BastionSecurityGroupID}
       TemplateURL: https://s3-us-west-2.amazonaws.com/cf-templates-f1qzfv4c2gms-us-west-2/02-create-ecs-cluster.yaml
       TimeoutInMinutes: '10'
       Tags:
