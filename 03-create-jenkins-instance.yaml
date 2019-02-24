@@ -1,0 +1,210 @@
+---
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Setup jenkins instance as a bastion host
+
+Parameters:
+  AppName: 
+    Type: String
+    Default: test-app-dev
+    Description: Name of your application or organization
+  VpcCIDR:
+    Type: AWS::EC2::VPC::Id
+    Description: Select a VPC that allows instances access to the Internet.
+  SubnetId:
+    Type: List<AWS::EC2::Subnet::Id>
+    Description: Select subnets in your selected VPC.
+  InstanceType:
+    Type: String
+    Description: EC2 instance type
+    Default: t2.micro
+    AllowedValues: [t3.micro, t3.small, t3.medium, t3.large, t2.micro, t2.small,
+      t2.medium, t2.large, m3.medium, m3.large, m3.xlarge, m3.2xlarge, m4.large,
+      m4.xlarge, m4.2xlarge, m4.4xlarge, m4.10xlarge, c4.large, c4.xlarge,
+      c4.2xlarge, c4.4xlarge, c4.8xlarge, c3.large, c3.xlarge, c3.2xlarge,
+      c3.4xlarge, c3.8xlarge, r3.large, r3.xlarge, r3.2xlarge, r3.4xlarge,
+      r3.8xlarge, i2.xlarge, i2.2xlarge, i2.4xlarge, i2.8xlarge]
+    ConstraintDescription: Please choose a valid instance type.
+  RemoteAccessCIDR:
+    Type: String
+    AllowedPattern: "^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])(\\/([0-9]|[1-2][0-9]|3[0-2]))$"
+    Default: "0.0.0.0/0"
+    Description: Allowed CIDR block for external SSH access to the bastions
+    ConstraintDescription: CIDR block parameter must be in the form x.x.x.x/x
+  KeyName:
+    Type: AWS::EC2::KeyPair::KeyName
+    Description: Name of an existing EC2 KeyPair to enable SSH access to the Bastion instance.
+  DesiredNumBastionHosts:
+    Description: Number of bastion hosts to launch at after start
+    Type: Number
+    Default: 1
+  MaxNumBastionHosts:
+    Description: Max number of bastion hosts to launch
+    Type: Number
+    Default: 1
+
+# It's crossregion AMI map for "CentOS 7 (x86_64) - with Updates HVM" AMI for febrary 2019
+Mappings:
+  AWSRegionToAMI:
+    us-east-2:
+      AMIID: ami-0f2b4fc905b0bd1f1
+    us-east-1:
+      AMIID: ami-02eac2c0129f6376b
+    us-west-1:
+      AMIID: ami-074e2d6769f445be5
+    us-west-2:
+      AMIID: ami-01ed306a12b7d1c96
+    ap-south-1:
+      AMIID: ami-02e60be79e78fef21
+    ap-northeast-2:
+      AMIID: ami-06cf2a72dadf92410
+    ap-southeast-1:
+      AMIID: ami-0b4dd9d65556cac22
+    ap-southeast-2:
+      AMIID: ami-08bd00d7713a39e7d
+    ap-northeast-1:
+      AMIID: ami-045f38c93733dd48d
+    ca-central-1:
+      AMIID: ami-033e6106180a626d0
+    eu-central-1:
+      AMIID: ami-04cf43aca3e6f3de3
+    eu-west-1:
+      AMIID: ami-0ff760d16d9497662
+    eu-west-2:
+      AMIID: ami-0eab3a90fc693af19
+    eu-west-3:
+      AMIID: ami-0e1ab783dc9489f34
+    eu-north-1:
+      AMIID: ami-5ee66f20
+    sa-east-1:
+      AMIID: ami-0b8d86d4bf91850af
+
+Resources:
+  EIP:
+    Type: AWS::EC2::EIP
+    Properties:
+      Domain: vpc
+  BastionAutoScalingGroup:
+    Type: AWS::AutoScaling::AutoScalingGroup
+    Properties:
+      AutoScalingGroupName : !Sub ${AppName}-devops-asg
+      LaunchConfigurationName: !Ref 'BastionLaunchConfiguration'
+      VPCZoneIdentifier: !Ref 'SubnetId'
+      MinSize: '1'
+      MaxSize: !Ref 'MaxNumBastionHosts'
+      Cooldown: '300'
+      DesiredCapacity: !Ref 'DesiredNumBastionHosts'
+      Tags:
+        - Key: Name
+          Value: !Sub ${AppName}-devops-ec2asg
+          PropagateAtLaunch: 'true'
+    CreationPolicy:
+      ResourceSignal:
+        Count: !Ref 'DesiredNumBastionHosts'
+        Timeout: PT30M
+  BastionLaunchConfiguration:
+    Type: AWS::AutoScaling::LaunchConfiguration
+    Properties:
+      LaunchConfigurationName: !Sub ${AppName}-devops-lc
+      AssociatePublicIpAddress: 'true'
+      InstanceMonitoring: 'false'
+      KeyName: !Ref 'KeyName'
+      IamInstanceProfile: !Ref 'BastionHostProfile'
+      ImageId: !FindInMap [AWSRegionToAMI, !Ref 'AWS::Region', AMIID]
+      SecurityGroups:
+        - !Ref 'BastionSecurityGroup' 
+      InstanceType: !Ref 'InstanceType'
+      UserData: 
+        Fn::Base64: !Sub |
+          #!/bin/bash -xe
+          exec > >(tee /var/log/user-data.log|logger -t user-data -s 2>/dev/console) 2>&1
+          yum update -y
+          yum install -y epel-release
+          yum install -y python-pip
+          pip install --upgrade pip &> /dev/null
+          pip install awscli --ignore-installed six &> /dev/null
+          easy_install https://s3.amazonaws.com/cloudformation-examples/aws-cfn-bootstrap-latest.tar.gz
+          # associate Elastic IP
+          INSTANCE_ID=$(curl -s http://169.254.169.254/latest/meta-data/instance-id)
+          aws ec2 associate-address --region ${AWS::Region} --instance-id $INSTANCE_ID --allocation-id ${EIP.AllocationId} --allow-reassociation
+          # send successfull signal if ok
+          cfn-signal -e $? --stack ${AWS::StackName} --resource BastionAutoScalingGroup --region ${AWS::Region}
+  BastionSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupName: !Sub ${AppName}-devops-instance-sg-1
+      GroupDescription: Enables SSH Access to Bastion Hosts
+      VpcId: !Ref 'VpcCIDR'
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: '22'
+          ToPort: '22'
+          CidrIp: !Ref 'RemoteAccessCIDR'
+        - IpProtocol: icmp
+          FromPort: '-1'
+          ToPort: '-1'
+          CidrIp: !Ref 'RemoteAccessCIDR'
+      Tags:
+        - Key: Name
+          Value: !Sub ${AppName}-devops-instance-sg
+  BastionHostProfile:
+    Type: AWS::IAM::InstanceProfile
+    Properties:
+      Path: /
+      Roles: [!Ref 'BastionHostRole']
+  BastionHostRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub ${AppName}-devops-instance-iam-role
+      Path: /
+      AssumeRolePolicyDocument:
+        Statement:
+        - Effect: Allow
+          Principal:
+            Service: [ec2.amazonaws.com]
+          Action: ['sts:AssumeRole']
+      Policies:
+      - PolicyName: !Sub ${AppName}-ec2-describe-iam-policy
+        PolicyDocument:
+          Statement:
+          - Effect: Allow
+            Action: ['ec2:Describe*']
+            Resource: '*'
+      - PolicyName: !Sub ${AppName}-ecs-readwrite-iam-policy
+        PolicyDocument:
+          Statement:
+          - Effect: Allow
+            Action: ['ecs:*']
+            Resource: '*'
+      - PolicyName: !Sub ${AppName}-s3-read-iam-policy
+        PolicyDocument:
+          Statement:
+          - Effect: Allow
+            Action: ['s3:ListAllMyBuckets', 's3:ListBucket']
+            Resource: '*'
+      - PolicyName: !Sub ${AppName}-eip-attachment-iam-policy
+        PolicyDocument:
+          Statement:
+          - Effect: Allow
+            Action: ['ec2:AssociateAddress', 'ec2:DisassociateAddress']
+            Resource: '*'
+Outputs:
+  BastionAutoScalingGroup:
+    Description: Auto Scaling Group Reference ID
+    Value: !Ref 'BastionAutoScalingGroup'
+    Export:
+      Name: !Sub '${AWS::StackName}-BastionAutoScalingGroup'
+  EIP:
+    Description: Elastic IP 1 for Bastion
+    Value: !Ref 'EIP'
+    Export:
+      Name: !Sub '${AWS::StackName}-EIP'
+  BastionSecurityGroupID:
+    Description: Bastion Security Group ID
+    Value: !Ref 'BastionSecurityGroup'
+    Export:
+      Name: !Sub '${AWS::StackName}-BastionSecurityGroupID'
+  BastionHostRole:
+    Description: Bastion IAM Role name
+    Value: !Ref 'BastionHostRole'
+    Export:
+      Name: !Sub '${AWS::StackName}-BastionHostRole'
