@@ -27,7 +27,7 @@ Parameters:
   RemoteAccessCIDR:
     Type: String
     AllowedPattern: "^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])(\\/([0-9]|[1-2][0-9]|3[0-2]))$"
-    Default: "0.0.0.0/24"
+    Default: "0.0.0.0/0"
     Description: Allowed CIDR block for external SSH access to the bastions
     ConstraintDescription: CIDR block parameter must be in the form x.x.x.x/x
   KeyName:
@@ -40,7 +40,7 @@ Parameters:
   MaxNumBastionHosts:
     Description: Max number of bastion hosts to launch
     Type: Number
-    Default: 2
+    Default: 1
 
 # It's crossregion AMI map for "CentOS 7 (x86_64) - with Updates HVM" AMI for febrary 2019
 Mappings:
@@ -79,6 +79,10 @@ Mappings:
       AMIID: ami-0b8d86d4bf91850af
 
 Resources:
+  EIP:
+    Type: AWS::EC2::EIP
+    Properties:
+      Domain: vpc
   BastionAutoScalingGroup:
     Type: AWS::AutoScaling::AutoScalingGroup
     Properties:
@@ -95,6 +99,7 @@ Resources:
           PropagateAtLaunch: 'true'
     CreationPolicy:
       ResourceSignal:
+        Count: !Ref 'DesiredNumBastionHosts'
         Timeout: PT30M
   BastionLaunchConfiguration:
     Type: AWS::AutoScaling::LaunchConfiguration
@@ -102,13 +107,24 @@ Resources:
       LaunchConfigurationName: !Sub ${AppName}-devops-lc
       AssociatePublicIpAddress: 'true'
       InstanceMonitoring: 'false'
-      EbsOptimized: "true"
       KeyName: !Ref 'KeyName'
       IamInstanceProfile: !Ref 'BastionHostProfile'
       ImageId: !FindInMap [AWSRegionToAMI, !Ref 'AWS::Region', AMIID]
       SecurityGroups:
         - !Ref 'BastionSecurityGroup' 
       InstanceType: !Ref 'InstanceType'
+      UserData: 
+        Fn::Base64: !Sub |
+          #!/bin/bash -xe
+          yup update -y
+          yum install -y epel-release
+          yum install -y python-pip
+          pip install --upgrade pip &> /dev/null
+          pip install awscli --ignore-installed six &> /dev/null
+          easy_install https://s3.amazonaws.com/cloudformation-examples/aws-cfn-bootstrap-latest.tar.gz
+          EIP_LIST=${EIP}
+          cfn-init -v --stack ${AWS::StackName} --resource BastionLaunchConfiguration --region ${AWS::Region}
+          cfn-signal -e $? --stack ${AWS::StackName} --resource BastionAutoScalingGroup --region ${AWS::Region}
   BastionSecurityGroup:
     Type: AWS::EC2::SecurityGroup
     Properties:
@@ -162,3 +178,10 @@ Resources:
           - Effect: Allow
             Action: ['s3:ListAllMyBuckets', 's3:ListBucket']
             Resource: '*'
+      - PolicyName: !Sub ${AppName}-eip-attachment-iam-policy
+        PolicyDocument:
+          Statement:
+          - Effect: Allow
+            Action: ['ec2:AssociateAddress', 'ec2:DisassociateAddress']
+            Resource: '*'
+  
