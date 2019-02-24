@@ -79,21 +79,11 @@ Mappings:
       AMIID: ami-0b8d86d4bf91850af
 
 Resources:
-  BastionLaunchConfiguration:
-    Type: AWS::AutoScaling::LaunchConfiguration
-    Properties:
-      LaunchConfigurationName: !Sub ${AppName}-devops-lc
-      AssociatePublicIpAddress: 'true'
-      KeyName: !Ref 'KeyName'
-      IamInstanceProfile: !Ref 'BastionHostProfile'
-      ImageId: !FindInMap [AWSRegionToAMI, !Ref 'AWS::Region', AMIID]
-      SecurityGroups:
-        - !Ref 'BastionSecurityGroup' 
-      InstanceType: !Ref 'InstanceType'
   BastionAutoScalingGroup:
     Type: AWS::AutoScaling::AutoScalingGroup
     Properties:
       AutoScalingGroupName : !Sub ${AppName}-devops-asg
+      LaunchConfigurationName: !Ref 'BastionLaunchConfiguration'
       VPCZoneIdentifier: !Ref 'SubnetId'
       MinSize: '1'
       MaxSize: !Ref 'MaxNumBastionHosts'
@@ -106,6 +96,19 @@ Resources:
     CreationPolicy:
       ResourceSignal:
         Timeout: PT30M
+  BastionLaunchConfiguration:
+    Type: AWS::AutoScaling::LaunchConfiguration
+    Properties:
+      LaunchConfigurationName: !Sub ${AppName}-devops-lc
+      AssociatePublicIpAddress: 'true'
+      InstanceMonitoring: 'false'
+      EbsOptimized: "true"
+      KeyName: !Ref 'KeyName'
+      IamInstanceProfile: !Ref 'BastionHostProfile'
+      ImageId: !FindInMap [AWSRegionToAMI, !Ref 'AWS::Region', AMIID]
+      SecurityGroups:
+        - !Ref 'BastionSecurityGroup' 
+      InstanceType: !Ref 'InstanceType'
   BastionSecurityGroup:
     Type: AWS::EC2::SecurityGroup
     Properties:
