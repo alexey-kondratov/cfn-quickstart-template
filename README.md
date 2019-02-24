@@ -5,6 +5,7 @@ The goal of this project is to create a convenient template for deploying an env
 - stack-set file
 - create-vpc file
 - create-ecs cluster file
+- create-jenkins-instance file
 
 #### Requirements:
 1) For start Stack Set operations you need grant permissions on target account by this [manual](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/stacksets-prereqs.html#stacksets-prereqs-accountsetup)
@@ -15,3 +16,6 @@ Or you can use two templates in the .init / directory (With caution and understa
 #### Possible problems and their solutions:
 1) * **Q:** ASG error: "Failed - Launching a new EC2 instance" 
     * **A:** To do so please visit https://aws.amazon.com/marketplace/pp?sku=aw0evgkw8e5c1q413zgy5pjce. Then, Continue to Subscribe .
+
+#### Notice:
+- at the moment, the resource 'AWS::EC2::EIP' does not have the parameter 'Tag', or another parameter that would allow it to be assigned to the Elastic IP. (24 Feb 2019)
