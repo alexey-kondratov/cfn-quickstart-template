@@ -214,7 +214,7 @@ Resources:
         PublicSubnet2CIDR: !Ref PublicSubnet2CIDR
         PrivateSubnet1CIDR: !Ref PrivateSubnet1CIDR
         PrivateSubnet2CIDR: !Ref PrivateSubnet2CIDR
-      TemplateURL: https://s3-us-west-2.amazonaws.com/cf-templates-f1qzfv4c2gms-us-west-2/01-create-vpc.yaml
+      TemplateURL: https://s3-us-west-2.amazonaws.com/cfn-quickstart-templates/01-create-vpc.yaml
       TimeoutInMinutes: '5'
       Tags:
         - Key: Name
@@ -231,7 +231,7 @@ Resources:
         MaxClusterSize: !Ref ECSMaxClusterSize
         KeyName: !Ref ECSKeyPair
         BastionSecurityGroupID: !Sub ${ConfigBastionHost.Outputs.BastionSecurityGroupID}
-      TemplateURL: https://s3-us-west-2.amazonaws.com/cf-templates-f1qzfv4c2gms-us-west-2/02-create-ecs-cluster.yaml
+      TemplateURL: https://s3-us-west-2.amazonaws.com/cfn-quickstart-templates/02-create-ecs-cluster.yaml
       TimeoutInMinutes: '10'
       Tags:
         - Key: Name
@@ -248,7 +248,7 @@ Resources:
         MaxNumBastionHosts: !Ref MaxNumBastionHosts
         KeyName: !Ref BastionKeyPair
         RemoteAccessCIDR: !Ref BastionRemoteAccessCIDR
-      TemplateURL: https://s3-us-west-2.amazonaws.com/cf-templates-f1qzfv4c2gms-us-west-2/03-create-jenkins-instance.yaml
+      TemplateURL: https://s3-us-west-2.amazonaws.com/cfn-quickstart-templates/03-create-bastion-instance.yaml
       TimeoutInMinutes: '15'
       Tags:
         - Key: Name
@@ -268,7 +268,7 @@ Resources:
         DBInstanceClass: !Ref DBInstanceClass
         EC2SecurityGroupID: !Sub ${ConfigECS.Outputs.ECSSecurityGroupID}
         MultiAZ: !Ref RDSMultiAZ
-      TemplateURL: https://s3-us-west-2.amazonaws.com/cf-templates-f1qzfv4c2gms-us-west-2/03-create-jenkins-instance.yaml
+      TemplateURL: https://s3-us-west-2.amazonaws.com/cfn-quickstart-templates/04-create-rds-instance.yaml
       TimeoutInMinutes: '15'
       Tags:
         - Key: Name
