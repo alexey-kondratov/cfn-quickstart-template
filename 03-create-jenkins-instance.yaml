@@ -33,6 +33,14 @@ Parameters:
   KeyName:
     Type: AWS::EC2::KeyPair::KeyName
     Description: Name of an existing EC2 KeyPair to enable SSH access to the Bastion instance.
+  DesiredNumBastionHosts:
+    Description: Number of bastion hosts to launch at after start
+    Type: Number
+    Default: 1
+  MaxNumBastionHosts:
+    Description: Max number of bastion hosts to launch
+    Type: Number
+    Default: 2
 
 # It's crossregion AMI map for "CentOS 7 (x86_64) - with Updates HVM" AMI for febrary 2019
 Mappings:
@@ -80,11 +88,28 @@ Resources:
       IamInstanceProfile: !Ref 'BastionHostProfile'
       ImageId: !FindInMap [AWSRegionToAMI, !Ref 'AWS::Region', AMIID]
       SecurityGroups:
-        - !Ref 'BastionSecurityGroup'
+        - !Ref 'BastionSecurityGroup' 
       InstanceType: !Ref 'InstanceType'
+  BastionAutoScalingGroup:
+    Type: AWS::AutoScaling::AutoScalingGroup
+    Properties:
+      AutoScalingGroupName : !Sub ${AppName}-devops-asg
+      VPCZoneIdentifier: !Ref 'SubnetId'
+      MinSize: '1'
+      MaxSize: !Ref 'MaxNumBastionHosts'
+      Cooldown: '300'
+      DesiredCapacity: !Ref 'DesiredNumBastionHosts'
+      Tags:
+        - Key: Name
+          Value: !Sub ${AppName}-devops-ec2asg
+          PropagateAtLaunch: 'true'
+    CreationPolicy:
+      ResourceSignal:
+        Timeout: PT30M
   BastionSecurityGroup:
     Type: AWS::EC2::SecurityGroup
     Properties:
+      GroupName: !Sub ${AppName}-devops-instance-sg-1
       GroupDescription: Enables SSH Access to Bastion Hosts
       VpcId: !Ref 'VpcCIDR'
       SecurityGroupIngress:
