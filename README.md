@@ -11,3 +11,7 @@ The goal of this project is to create a convenient template for deploying an env
 Or you can use two templates in the .init / directory (With caution and understanding of what you share);
 
 2) Before start you need create Amazon EC2 key pairs for every instance, or instance type ([manual](https://docs.aws.amazon.com/servicecatalog/latest/adminguide/getstarted-keypair.html));
+
+#### Possible problems and their solutions:
+1) Q: ASG error: "Failed - Launching a new EC2 instance" 
+   A: To do so please visit https://aws.amazon.com/marketplace/pp?sku=aw0evgkw8e5c1q413zgy5pjce. Then, Continue to Subscribe .
