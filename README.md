@@ -6,6 +6,7 @@ The goal of this project is to create a convenient template for deploying an env
 - create-vpc file
 - create-ecs cluster file
 - create-bastion-instance file
+- create-rds-instance file
 
 #### Requirements:
 1) For start Stack Set operations you need grant permissions on target account by this [manual](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/stacksets-prereqs.html#stacksets-prereqs-accountsetup)
