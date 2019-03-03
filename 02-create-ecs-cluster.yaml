@@ -93,7 +93,7 @@ Resources:
           CidrIp: '0.0.0.0/24'
       Tags:
         - Key: Name
-          Value: !Sub ${AppName}-alb--sg
+          Value: !Sub ${AppName}-alb-sg
   EcsSecurityGroup:
     Type: AWS::EC2::SecurityGroup
     Properties:
@@ -239,7 +239,7 @@ Resources:
       HealthCheckProtocol: HTTP
       HealthCheckTimeoutSeconds: 5
       HealthyThresholdCount: 2
-      Name: !Sub ${AppName}-ecs-td
+      Name: !Sub ${AppName}-ecs-tg
       Port: 80
       Protocol: HTTP
       UnhealthyThresholdCount: 2
