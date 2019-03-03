@@ -80,6 +80,20 @@ Resources:
     Type: AWS::ECS::Cluster
     Properties:
       ClusterName: !Sub ${AppName}-cluster
+  AlbSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupName: !Sub ${AppName}-alb-sg-1
+      GroupDescription: Enables HTTP port access
+      VpcId: !Ref 'VpcCIDR'
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: '80'
+          ToPort: '80'
+          CidrIp: '0.0.0.0/24'
+      Tags:
+        - Key: Name
+          Value: !Sub ${AppName}-alb--sg
   EcsSecurityGroup:
     Type: AWS::EC2::SecurityGroup
     Properties:
@@ -191,7 +205,7 @@ Resources:
     Properties:
       Name: !Sub ${AppName}-ecs-alb
       Subnets: !Ref 'SubnetId'
-      SecurityGroups: [!Ref 'EcsSecurityGroup']
+      SecurityGroups: [!Ref 'AlbSecurityGroup']
       Tags: 
         - Key: Name
           Value: !Sub ${AppName}-ecs-alb
